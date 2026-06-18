@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}{{ match.home_team }} vs {{ match.away_team }} — 比赛详情{% endblock %}
+
+{% block content %}
+<div class="match-detail">
+    <a href="/matches" class="back-link">← 返回比赛列表</a>
+
+    <div class="match-hero">
+        <div class="match-hero-teams">
+            <div class="match-team-big">
+                {% if home %}
+                <div class="team-flag-lg">{{ home.name[:2] }}</div>
+                <h2>{{ home.name }}</h2>
+                <span class="team-rank">FIFA #{{ home.fifa_rank }}</span>
+                {% else %}
+                <h2>{{ match.home_team }}</h2>
+                {% endif %}
+            </div>
+
+            <div class="match-hero-center">
+                {% if match.is_played() %}
+                <div class="final-score">{{ match.home_score }} - {{ match.away_score }}</div>
+                <span class="match-status done">已结束</span>
+                {% else %}
+                <div class="final-score upcoming">vs</div>
+                <span class="match-status upcoming">即将进行</span>
+                {% endif %}
+                <div class="match-meta">
+                    <div>{{ match.stage.value }}</div>
+                    {% if match.group %}<div>{{ match.group }} 组</div>{% endif %}
+                    {% if match.match_date %}
+                    <div>{{ match.match_date.strftime('%Y-%m-%d %H:%M') }}</div>
+                    {% endif %}
+                    <div>{{ match.stadium }}, {{ match.city }}</div>
+                </div>
+            </div>
+
+            <div class="match-team-big">
+                {% if away %}
+                <div class="team-flag-lg">{{ away.name[:2] }}</div>
+                <h2>{{ away.name }}</h2>
+                <span class="team-rank">FIFA #{{ away.fifa_rank }}</span>
+                {% else %}
+                <h2>{{ match.away_team }}</h2>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if not match.is_played() %}
+    <div class="predict-section">
+        <h2>🔮 AI 预测</h2>
+        <div id="prediction-container">
+            <div id="prediction-placeholder">
+                <p>点击下方按钮，让 AI 分析这场比赛</p>
+                <button id="btn-predict" class="btn-primary" onclick="triggerPrediction('{{ match.match_id }}')">
+                    🤖 开始 AI 预测
+                </button>
+                <p class="prediction-hint">预计耗时 3-10 秒</p>
+            </div>
+            <div id="prediction-loading" style="display:none;">
+                <div class="loading-spinner"></div>
+                <p>AI 正在分析两队数据...</p>
+            </div>
+            <div id="prediction-result" style="display:none;"></div>
+        </div>
+    </div>
+    {% else %}
+    <div class="post-match-section">
+        <h2>赛后</h2>
+
+        {% if cached_pred %}
+        <div class="prediction-vs-actual">
+            <h3>AI 预测 vs 实际结果</h3>
+            <div class="vs-row">
+                <div class="vs-box predicted">
+                    <span class="vs-label">AI 预测</span>
+                    <span class="vs-score">{{ cached_pred.predicted_home_score }} - {{ cached_pred.predicted_away_score }}</span>
+                    <span class="vs-prob">主{{ cached_pred.prob_home_pct() }} / 平{{ cached_pred.prob_draw_pct() }} / 客{{ cached_pred.prob_away_pct() }}</span>
+                </div>
+                <div class="vs-arrow">→</div>
+                <div class="vs-box actual">
+                    <span class="vs-label">实际结果</span>
+                    <span class="vs-score">{{ match.home_score }} - {{ match.away_score }}</span>
+                    <span class="vs-result">
+                        {% set pred_winner = 'home' if cached_pred.predicted_home_score > cached_pred.predicted_away_score else ('away' if cached_pred.predicted_away_score > cached_pred.predicted_home_score else 'draw') %}
+                        {% set actual_winner = 'home' if match.home_score > match.away_score else ('away' if match.away_score > match.home_score else 'draw') %}
+                        {% if pred_winner == actual_winner %}
+                        <span class="accuracy-hit">胜负预测正确</span>
+                        {% else %}
+                        <span class="accuracy-miss">胜负预测偏差</span>
+                        {% endif %}
+                        {% if cached_pred.predicted_home_score == match.home_score and cached_pred.predicted_away_score == match.away_score %}
+                        <span class="accuracy-hit">比分完全命中!</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            {% if cached_post %}
+            <a href="/analysis/post/{{ match.match_id }}" class="btn-secondary">查看赛后总结</a>
+            <button class="btn-secondary" onclick="refreshPostAnalysis('{{ match.match_id }}')">重新生成</button>
+            {% else %}
+            <button class="btn-primary" id="btn-post-analysis" onclick="generatePostAnalysis('{{ match.match_id }}')">生成赛后总结</button>
+            {% endif %}
+        </div>
+        <div id="post-analysis-loading" style="display:none;text-align:center;padding:20px;">
+            <div class="loading-spinner"></div>
+        </div>
+        <div id="post-analysis-result" style="display:none;"></div>
+    </div>
+    {% endif %}
+
+    {% if home and away %}
+    <div class="radar-container">
+        <h2>📊 球队雷达对比</h2>
+        <canvas id="radar-chart"></canvas>
+    </div>
+    <div class="teams-compare">
+        <h2>📋 数据详情</h2>
+        <table class="compare-table">
+            <tr>
+                <th></th>
+                <th>{{ home.name }}</th>
+                <th>{{ away.name }}</th>
+            </tr>
+            <tr><td>FIFA 排名</td><td>{{ home.fifa_rank }}</td><td>{{ away.fifa_rank }}</td></tr>
+            <tr><td>Elo 评分</td><td>{{ home.elo_rating|int }}</td><td>{{ away.elo_rating|int }}</td></tr>
+            <tr><td>世界杯冠军</td><td>{{ home.world_cup_titles }} 次</td><td>{{ away.world_cup_titles }} 次</td></tr>
+            <tr><td>近期状态</td><td>{{ home.recent_form|join(' ') }}</td><td>{{ away.recent_form|join(' ') }}</td></tr>
+            <tr><td>场均进球</td><td>{{ home.avg_goals }}</td><td>{{ away.avg_goals }}</td></tr>
+            <tr><td>场均失球</td><td>{{ home.avg_conceded }}</td><td>{{ away.avg_conceded }}</td></tr>
+            <tr><td>关键球员</td><td>{{ home.key_players[:3]|join(', ') }}</td><td>{{ away.key_players[:3]|join(', ') }}</td></tr>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function triggerPrediction(matchId) {
+    const placeholder = document.getElementById('prediction-placeholder');
+    const loading = document.getElementById('prediction-loading');
+    const resultDiv = document.getElementById('prediction-result');
+
+    placeholder.style.display = 'none';
+    resultDiv.style.display = 'none';
+    loading.style.display = 'block';
+
+    try {
+        const resp = await fetch(`/api/predict/${matchId}`, { method: 'POST' });
+        const data = await resp.json();
+        loading.style.display = 'none';
+
+        if (data.error) {
+            resultDiv.innerHTML = `<p class="error-message">${data.error}</p>`;
+            resultDiv.style.display = 'block';
+            return;
+        }
+        showPredictionResult(data, resultDiv);
+    } catch (e) {
+        loading.style.display = 'none';
+        resultDiv.innerHTML = `<p class="error-message">网络错误: ${e.message}</p>`;
+        resultDiv.style.display = 'block';
+    }
+}
+
+function showPredictionResult(data, targetDiv) {
+    targetDiv.innerHTML = `
+        <div class="prediction-card">
+            <div class="prediction-score">${data.predicted_score}</div>
+            <div class="confidence confidence-${data.confidence}">置信度: ${data.confidence}</div>
+            <div class="probabilities">
+                <div class="prob-bar">
+                    <span class="prob-label">主胜</span>
+                    <div class="prob-track"><div class="prob-fill home" style="width:${data.home_win_prob * 100}%"></div></div>
+                    <span class="prob-value">${Math.round(data.home_win_prob * 100)}%</span>
+                </div>
+                <div class="prob-bar">
+                    <span class="prob-label">平局</span>
+                    <div class="prob-track"><div class="prob-fill draw" style="width:${data.draw_prob * 100}%"></div></div>
+                    <span class="prob-value">${Math.round(data.draw_prob * 100)}%</span>
+                </div>
+                <div class="prob-bar">
+                    <span class="prob-label">客胜</span>
+                    <div class="prob-track"><div class="prob-fill away" style="width:${data.away_win_prob * 100}%"></div></div>
+                    <span class="prob-value">${Math.round(data.away_win_prob * 100)}%</span>
+                </div>
+            </div>
+            <div class="reasoning">
+                <h4>AI 推理</h4>
+                <p>${data.reasoning}</p>
+            </div>
+            <div class="model-used">模型: ${data.model_used}</div>
+        </div>
+    `;
+    targetDiv.style.display = 'block';
+}
+</script>
+
+async function generatePostAnalysis(matchId) {
+    const btn = document.getElementById('btn-post-analysis');
+    btn.disabled = true; btn.textContent = '生成中...';
+    document.getElementById('post-analysis-loading').style.display = 'block';
+    try {
+        const resp = await fetch(`/analysis/api/post/${matchId}`, { method: 'POST' });
+        const data = await resp.json();
+        document.getElementById('post-analysis-loading').style.display = 'none';
+        if (data.error) {
+            document.getElementById('post-analysis-result').innerHTML = `<p class="error-message">${data.error}</p>`;
+        } else {
+            document.getElementById('post-analysis-result').innerHTML = `<div class="analysis-content">${data.analysis}</div>`;
+            btn.style.display = 'none';
+        }
+        document.getElementById('post-analysis-result').style.display = 'block';
+    } catch(e) {
+        document.getElementById('post-analysis-loading').style.display = 'none';
+        document.getElementById('post-analysis-result').innerHTML = `<p class="error-message">网络错误: ${e.message}</p>`;
+        document.getElementById('post-analysis-result').style.display = 'block';
+        btn.disabled = false; btn.textContent = '生成赛后总结';
+    }
+}
+async function refreshPostAnalysis(matchId) {
+    document.getElementById('post-analysis-loading').style.display = 'block';
+    try {
+        const resp = await fetch(`/analysis/api/post/${matchId}`, { method: 'POST' });
+        const data = await resp.json();
+        document.getElementById('post-analysis-loading').style.display = 'none';
+        if (!data.error) {
+            document.getElementById('post-analysis-result').innerHTML = `<div class="analysis-content">${data.analysis}</div>`;
+            document.getElementById('post-analysis-result').style.display = 'block';
+        }
+    } catch(e) { document.getElementById('post-analysis-loading').style.display = 'none'; }
+}
+
+{% if home and away %}
+<script>
+// 绘制雷达图
+(function() {
+    const labels = ['FIFA排名', 'Elo评分', '场均进球', '场均失球\n(越低越好)', '世界杯\n冠军数', '近期状态'];
+    // 归一化到 0-1
+    const maxRank = 210;
+    const maxElo = 2200;
+    const maxGoals = 3.5;
+    const maxConc = 3.0;
+    const maxTitles = 5;
+
+    const formScore = (arr) => {
+        const scores = {'W': 1, 'D': 0.5, 'L': 0};
+        return arr.reduce((s, r) => s + (scores[r] || 0), 0) / arr.length;
+    };
+
+    const d1 = [
+        Math.max(0, 1 - {{ home.fifa_rank }} / maxRank),
+        {{ home.elo_rating }} / maxElo,
+        {{ home.avg_goals }} / maxGoals,
+        Math.max(0, 1 - {{ home.avg_conceded }} / maxConc),
+        {{ home.world_cup_titles }} / maxTitles,
+        formScore({{ home.recent_form | tojson }}),
+    ];
+    const d2 = [
+        Math.max(0, 1 - {{ away.fifa_rank }} / maxRank),
+        {{ away.elo_rating }} / maxElo,
+        {{ away.avg_goals }} / maxGoals,
+        Math.max(0, 1 - {{ away.avg_conceded }} / maxConc),
+        {{ away.world_cup_titles }} / maxTitles,
+        formScore({{ away.recent_form | tojson }}),
+    ];
+
+    drawRadarChart('radar-chart', labels, d1, d2, '{{ home.name }}', '{{ away.name }}');
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI 预测世界杯 2026{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">⚽ AI 世界杯 2026</a>
+            <div class="nav-links">
+                <a href="/">首页</a>
+                <a href="/matches">比赛</a>
+                <a href="/predictions">AI 预测</a>
+                <a href="/bracket/champion">冠军模拟</a>
+                <a href="/teams">球队数据</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>⚠️ AI 预测仅供参考，不构成投注建议 | <a href="/about">关于本站</a></p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}
+{% if analysis_type == 'pre_match' %}赛前分析{% else %}赛后总结{% endif %}: {{ match.home_team }} vs {{ match.away_team }}
+{% endblock %}
+
+{% block content %}
+<a href="/matches/{{ match.match_id }}" class="back-link">← 返回比赛详情</a>
+
+<div class="match-hero">
+    <div class="match-hero-teams">
+        <div class="match-team-big">
+            <h2>{{ home.name if home else match.home_team }}</h2>
+        </div>
+        <div class="match-hero-center">
+            {% if match.is_played() %}
+            <div class="final-score">{{ match.home_score }} - {{ match.away_score }}</div>
+            <span class="match-status done">已结束</span>
+            {% else %}
+            <div class="final-score upcoming">vs</div>
+            <span class="match-status upcoming">即将进行</span>
+            {% endif %}
+            <div class="match-meta">
+                <div>{{ match.stage.value }}</div>
+                {% if match.match_date %}<div>{{ match.match_date.strftime('%Y-%m-%d %H:%M') }} 北京时间</div>{% endif %}
+                <div>{{ match.stadium }}</div>
+            </div>
+        </div>
+        <div class="match-team-big">
+            <h2>{{ away.name if away else match.away_team }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="predict-section">
+    {% if cached %}
+    <div class="analysis-content">{{ cached | safe }}</div>
+    <button id="btn-refresh-analysis" class="btn-secondary" onclick="refreshAnalysis()">🔄 重新生成</button>
+    {% else %}
+    <div id="analysis-placeholder">
+        <h2>{% if analysis_type == 'pre_match' %}📋 AI 赛前深度分析{% else %}📝 AI 赛后总结{% endif %}</h2>
+        <p>点击下方按钮，AI 将生成详细分析报告</p>
+        <button id="btn-analysis" class="btn-primary" onclick="generateAnalysis()">
+            {% if analysis_type == 'pre_match' %}🤖 生成赛前分析{% else %}🤖 生成赛后总结{% endif %}
+        </button>
+        <p class="prediction-hint">预计耗时 5-15 秒</p>
+    </div>
+    {% endif %}
+</div>
+
+<div id="analysis-loading" style="display:none; text-align:center; padding:40px;">
+    <div class="loading-spinner"></div>
+    <p>AI 正在撰写分析报告...</p>
+</div>
+<div id="analysis-result" style="display:none;"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function generateAnalysis() {
+    document.getElementById('analysis-placeholder').style.display = 'none';
+    document.getElementById('analysis-loading').style.display = 'block';
+
+    const type = '{{ analysis_type }}' === 'pre_match' ? 'pre' : 'post';
+    try {
+        const resp = await fetch(`/analysis/api/${type}/{{ match.match_id }}`, { method: 'POST' });
+        const data = await resp.json();
+        document.getElementById('analysis-loading').style.display = 'none';
+
+        if (data.error) {
+            document.getElementById('analysis-result').innerHTML = `<p class="error-message">${data.error}</p>`;
+        } else {
+            document.getElementById('analysis-result').innerHTML = `
+                <div class="analysis-content">${data.analysis}</div>`;
+        }
+        document.getElementById('analysis-result').style.display = 'block';
+    } catch (e) {
+        document.getElementById('analysis-loading').style.display = 'none';
+        document.getElementById('analysis-result').innerHTML = `<p class="error-message">网络错误: ${e.message}</p>`;
+        document.getElementById('analysis-result').style.display = 'block';
+    }
+}
+
+async function refreshAnalysis() {
+    document.querySelector('.analysis-content').style.display = 'none';
+    document.getElementById('btn-refresh-analysis').style.display = 'none';
+    document.getElementById('analysis-loading').style.display = 'block';
+
+    const type = '{{ analysis_type }}' === 'pre_match' ? 'pre' : 'post';
+    try {
+        const resp = await fetch(`/analysis/api/${type}/{{ match.match_id }}`, { method: 'POST' });
+        const data = await resp.json();
+        document.getElementById('analysis-loading').style.display = 'none';
+
+        if (data.error) {
+            document.getElementById('analysis-result').innerHTML = `<p class="error-message">${data.error}</p>`;
+        } else {
+            document.getElementById('analysis-result').innerHTML = `
+                <div class="analysis-content">${data.analysis}</div>`;
+        }
+        document.getElementById('analysis-result').style.display = 'block';
+    } catch (e) {
+        document.getElementById('analysis-loading').style.display = 'none';
+        document.getElementById('analysis-result').innerHTML = `<p class="error-message">网络错误: ${e.message}</p>`;
+        document.getElementById('analysis-result').style.display = 'block';
+    }
+}
+</script>
+{% endblock %}

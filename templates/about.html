@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}关于 — AI 世界杯{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+
+<h1>关于本站</h1>
+
+<div class="team-section">
+    <h2>AI 预测世界杯 2026</h2>
+    <p>这是一个基于大语言模型的世界杯比赛预测平台，覆盖 2026 年美加墨世界杯全部 104 场比赛。</p>
+</div>
+
+<div class="team-section">
+    <h2>功能</h2>
+    <ul style="color:var(--text-dim);line-height:2;list-style:none;padding:0;">
+        <li>🤖 <strong>AI 比分预测</strong> — 基于球队数据的胜负平概率和比分预测</li>
+        <li>🏆 <strong>冠军模拟</strong> — 蒙特卡洛淘汰赛模拟，预测夺冠概率</li>
+        <li>📋 <strong>赛前分析</strong> — AI 深度战术分析和关键对位</li>
+        <li>📝 <strong>赛后总结</strong> — AI 比赛回顾和球员表现评分</li>
+        <li>📊 <strong>球队数据</strong> — 48 支球队的排名、Elo、球员信息</li>
+    </ul>
+</div>
+
+<div class="team-section">
+    <h2>技术</h2>
+    <ul style="color:var(--text-dim);line-height:2;">
+        <li>后端: Python Flask + SQLite</li>
+        <li>前端: Jinja2 模板 + Canvas 图表 + 原生 JavaScript</li>
+        <li>AI: DeepSeek 大模型 API（兼容 Anthropic 协议）</li>
+        <li>数据: FIFA 官方赛程（北京时间）</li>
+    </ul>
+</div>
+
+<div class="team-section">
+    <h2>免责声明</h2>
+    <p style="color:var(--text-dim);">⚠️ 所有 AI 预测结果仅供参考，不构成任何形式的投注建议。足球比赛充满不确定性，预测不可能 100% 准确。理性看待，享受比赛。</p>
+</div>
+
+</div>
+{% endblock %}

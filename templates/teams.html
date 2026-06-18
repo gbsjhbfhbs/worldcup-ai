@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}球队数据中心 — AI 世界杯{% endblock %}
+
+{% block content %}
+<h1>🌍 球队数据中心</h1>
+
+<div class="team-grid">
+    {% for code, team in teams.items()|sort(attribute='1.fifa_rank') %}
+    <a href="/teams/{{ code }}" class="team-card">
+        <div class="team-card-header">
+            <span class="team-badge">{{ code }}</span>
+            <span class="team-rank-badge">#{{ team.fifa_rank }}</span>
+        </div>
+        <h3>{{ team.name }}</h3>
+        <div class="team-card-meta">
+            <span>{{ team.name_en }}</span>
+            <span>{{ team.confederation }}</span>
+            <span>{{ team.group }} 组</span>
+        </div>
+        <div class="team-card-stats">
+            <span>🏆 {{ team.world_cup_titles }} 冠</span>
+            <span>⭐ Elo {{ team.elo_rating|int }}</span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

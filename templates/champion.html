@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}冠军预测模拟 — AI 世界杯{% endblock %}
+
+{% block content %}
+<h1>🏆 AI 冠军模拟</h1>
+<p class="subtitle">基于 Elo 评分的蒙特卡洛模拟，预测各队夺冠概率</p>
+
+<div class="simulate-section">
+    <p>
+        模拟次数:
+        <select id="iterations" class="sim-select">
+            <option value="100">100 次</option>
+            <option value="500">500 次</option>
+            <option value="1000" selected>1000 次</option>
+            <option value="2000">2000 次</option>
+            <option value="5000">5000 次</option>
+        </select>
+        <button id="btn-simulate" class="btn-primary" onclick="runSimulation()">
+            🔄 开始模拟
+        </button>
+    </p>
+    <p class="prediction-hint">1000 次模拟约需 5-15 秒</p>
+</div>
+
+<div id="sim-loading" style="display:none; text-align:center; padding:40px;">
+    <div class="loading-spinner"></div>
+    <p>正在运行蒙特卡洛模拟...</p>
+</div>
+
+<div id="sim-results" style="display:none;">
+    <h2>📊 夺冠概率 TOP 10</h2>
+    <canvas id="odds-canvas"></canvas>
+    <h2 style="margin-top:32px;">📋 完整排名</h2>
+    <div id="odds-table"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function runSimulation() {
+    document.getElementById('sim-results').style.display = 'none';
+    document.getElementById('sim-loading').style.display = 'block';
+    document.getElementById('btn-simulate').disabled = true;
+
+    const iterations = parseInt(document.getElementById('iterations').value);
+
+    try {
+        const resp = await fetch('/bracket/api/simulate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({iterations: iterations})
+        });
+        const data = await resp.json();
+
+        document.getElementById('sim-loading').style.display = 'none';
+        document.getElementById('sim-results').style.display = 'block';
+        document.getElementById('btn-simulate').disabled = false;
+
+        if (data.error) {
+            document.getElementById('sim-results').innerHTML = `<p class="error-message">${data.error}</p>`;
+            return;
+        }
+
+        // Canvas 柱状图
+        const colors = [
+            'rgba(255,215,0,0.9)', 'rgba(192,192,192,0.8)', 'rgba(205,127,50,0.7)',
+            'rgba(0,212,170,0.7)', 'rgba(0,212,170,0.65)', 'rgba(0,212,170,0.6)',
+            'rgba(0,212,170,0.55)', 'rgba(0,212,170,0.5)', 'rgba(0,212,170,0.45)',
+            'rgba(0,212,170,0.4)',
+        ];
+        drawBarChart('odds-canvas',
+            data.odds.map(o => `${o.team_name} (${o.team_code})`),
+            data.odds.map(o => o.probability),
+            colors
+        );
+        renderTable(data.odds, iterations);
+    } catch (e) {
+        document.getElementById('sim-loading').style.display = 'none';
+        document.getElementById('btn-simulate').disabled = false;
+        document.getElementById('sim-results').style.display = 'block';
+        document.getElementById('sim-results').innerHTML = `<p class="error-message">网络错误: ${e.message}</p>`;
+    }
+}
+
+function renderTable(odds, iterations) {
+    let html = '<table class="squad-table"><thead><tr><th>#</th><th>球队</th><th>Elo</th><th>模拟夺冠</th><th>概率</th></tr></thead><tbody>';
+    odds.forEach((o, i) => {
+        html += `<tr>
+            <td>${i + 1}</td>
+            <td><strong>${o.team_name}</strong> (${o.team_code})</td>
+            <td>${o.elo_rating}</td>
+            <td>${o.win_count} / ${iterations}</td>
+            <td><strong>${(o.probability * 100).toFixed(1)}%</strong></td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('odds-table').innerHTML = html;
+}
+</script>
+{% endblock %}

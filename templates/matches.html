@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}比赛列表 — AI 世界杯{% endblock %}
+
+{% block content %}
+<h1>📋 全部比赛</h1>
+
+{% if groups %}
+<div class="filter-bar">
+    <span>筛选小组：</span>
+    <button class="filter-btn active" onclick="filterMatches('all')">全部</button>
+    {% for g in groups %}
+    <button class="filter-btn" onclick="filterMatches('{{ g }}')">{{ group_labels.get(g, g + '组') }}</button>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="match-list">
+    {% for m in matches %}
+    <a href="/matches/{{ m.match_id }}" class="match-list-item" data-group="{{ m.group or '' }}">
+        <div class="match-list-left">
+            <span class="stage-tag">{{ m.stage.value }}</span>
+            {% if m.group %}<span class="group-tag">{{ m.group }}组</span>{% endif %}
+        </div>
+        <div class="match-list-center">
+            <span class="team-name">{{ m.home_team }}</span>
+            <span class="match-score">
+                {% if m.is_played() %}
+                <strong>{{ m.home_score }} - {{ m.away_score }}</strong>
+                {% else %}
+                <span class="vs-text">vs</span>
+                {% endif %}
+            </span>
+            <span class="team-name">{{ m.away_team }}</span>
+        </div>
+        <div class="match-list-right">
+            {% if m.match_date %}
+            <span class="match-date">{{ m.match_date.strftime('%m/%d %H:%M') }}</span>
+            {% endif %}
+            {% if not m.is_played() %}
+            <span class="predict-badge">🔮</span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function filterMatches(group) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    document.querySelectorAll('.match-list-item').forEach(item => {
+        if (group === 'all' || item.dataset.group === group) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

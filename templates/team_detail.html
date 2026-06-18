@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} — 球队详情{% endblock %}
+
+{% block content %}
+<a href="/teams" class="back-link">← 返回球队列表</a>
+
+<div class="team-detail-header">
+    <h1>{{ team.name }} <small>({{ team.name_en }})</small></h1>
+    <div class="team-tags">
+        <span class="tag">{{ team.confederation }}</span>
+        <span class="tag">{{ team.group }} 组</span>
+        <span class="tag">FIFA #{{ team.fifa_rank }}</span>
+        <span class="tag">Elo {{ team.elo_rating|int }}</span>
+    </div>
+</div>
+
+<div class="team-section">
+    <h2>📊 基本数据</h2>
+    <div class="stats-grid">
+        <div class="stat-item"><label>主教练</label><span>{{ team.coach or '未知' }}</span></div>
+        <div class="stat-item"><label>世界杯冠军</label><span>{{ team.world_cup_titles }} 次</span></div>
+        <div class="stat-item"><label>场均进球</label><span>{{ team.avg_goals }}</span></div>
+        <div class="stat-item"><label>场均失球</label><span>{{ team.avg_conceded }}</span></div>
+        <div class="stat-item"><label>近期状态</label><span>{{ team.recent_form|join(' · ') if team.recent_form else '暂无' }}</span></div>
+    </div>
+</div>
+
+<div class="team-section">
+    <h2>⭐ 关键球员</h2>
+    <div class="key-players">
+        {% for name in team.key_players %}
+        <span class="key-player-tag">{{ name }}</span>
+        {% endfor %}
+    </div>
+</div>
+
+{% if team.squad %}
+<div class="team-section">
+    <h2>👥 球员名单</h2>
+    <table class="squad-table">
+        <thead><tr><th>姓名</th><th>位置</th><th>俱乐部</th><th>出场</th><th>进球</th><th>年龄</th></tr></thead>
+        <tbody>
+        {% for p in team.squad %}
+        <tr>
+            <td><strong>{{ p.name }}</strong></td>
+            <td>{{ p.position }}</td>
+            <td>{{ p.club }}</td>
+            <td>{{ p.caps }}</td>
+            <td>{{ p.goals }}</td>
+            <td>{{ p.age }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,74 @@
+{
+  "MEX_RSA": {
+    "total": 2,
+    "wins_team1": 1,
+    "draws": 1,
+    "wins_team2": 0
+  },
+  "ARG_ALG": {
+    "total": 2,
+    "wins_team1": 1,
+    "draws": 1,
+    "wins_team2": 0
+  },
+  "BRA_MAR": {
+    "total": 2,
+    "wins_team1": 2,
+    "draws": 0,
+    "wins_team2": 0
+  },
+  "ENG_CRO": {
+    "total": 6,
+    "wins_team1": 3,
+    "draws": 1,
+    "wins_team2": 2
+  },
+  "FRA_SEN": {
+    "total": 1,
+    "wins_team1": 1,
+    "draws": 0,
+    "wins_team2": 0
+  },
+  "GER_CUW": {
+    "total": 0,
+    "wins_team1": 0,
+    "draws": 0,
+    "wins_team2": 0
+  },
+  "NED_JPN": {
+    "total": 2,
+    "wins_team1": 1,
+    "draws": 1,
+    "wins_team2": 0
+  },
+  "ESP_URU": {
+    "total": 4,
+    "wins_team1": 2,
+    "draws": 2,
+    "wins_team2": 0
+  },
+  "POR_COL": {
+    "total": 2,
+    "wins_team1": 1,
+    "draws": 0,
+    "wins_team2": 1
+  },
+  "USA_PAR": {
+    "total": 5,
+    "wins_team1": 3,
+    "draws": 1,
+    "wins_team2": 1
+  },
+  "CAN_BIH": {
+    "total": 1,
+    "wins_team1": 0,
+    "draws": 1,
+    "wins_team2": 0
+  },
+  "KOR_CZE": {
+    "total": 3,
+    "wins_team1": 1,
+    "draws": 1,
+    "wins_team2": 1
+  }
+}

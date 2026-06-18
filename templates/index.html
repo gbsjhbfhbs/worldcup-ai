@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}AI 预测世界杯 2026 — 首页{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>2026 FIFA 世界杯</h1>
+    <p class="hero-subtitle">AI 驱动的比赛预测平台</p>
+    <p class="hero-info">美国 · 加拿大 · 墨西哥 | 6/12 — 7/20 北京时间 | 48 队 · 104 场</p>
+</section>
+
+{% if today_matches %}
+<section class="section today-section">
+    <h2>今日比赛 <span class="today-badge">{{ today_matches[0].match_date.strftime('%m/%d') if today_matches[0].match_date else '' }}</span></h2>
+    <div class="match-cards">
+        {% for m in today_matches %}
+        <a href="/matches/{{ m.match_id }}" class="match-card today-card">
+            <div class="match-card-teams">
+                <span class="team-code">{{ m.home_team }}</span>
+                {% if m.is_played() %}
+                <span class="score">{{ m.score_display() }}</span>
+                {% else %}
+                <span class="vs">{{ m.match_date.strftime('%H:%M') if m.match_date else 'vs' }}</span>
+                {% endif %}
+                <span class="team-code">{{ m.away_team }}</span>
+            </div>
+            <div class="match-card-info">
+                <span class="stage-tag">{{ m.stage.value }}</span>
+                {% if m.group %}<span class="group-tag">{{ m.group }}组</span>{% endif %}
+            </div>
+            <div class="match-card-stadium">{{ m.stadium }}</div>
+            {% if not m.is_played() %}
+            <span class="predict-badge today-action">点击预测</span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="section">
+    <h2>即将进行的比赛</h2>
+    {% if upcoming %}
+    <div class="match-cards">
+        {% for m in upcoming %}
+        <a href="/matches/{{ m.match_id }}" class="match-card">
+            <div class="match-card-teams">
+                <span class="team-code">{{ m.home_team }}</span>
+                <span class="vs">vs</span>
+                <span class="team-code">{{ m.away_team }}</span>
+            </div>
+            <div class="match-card-info">
+                <span class="stage-tag">{{ m.stage.value }}</span>
+                {% if m.match_date %}
+                <span class="match-date">{{ m.match_date.strftime('%m/%d %H:%M') }}</span>
+                {% endif %}
+            </div>
+            <div class="match-card-stadium">{{ m.stadium }}</div>
+            <span class="predict-badge">AI 预测</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">暂无即将进行的比赛</p>
+    {% endif %}
+</section>
+
+{% if played %}
+<section class="section">
+    <h2>最近赛果</h2>
+    <div class="match-cards">
+        {% for m in played[-8:]|reverse %}
+        <a href="/matches/{{ m.match_id }}" class="match-card played">
+            <div class="match-card-teams">
+                <span class="team-code">{{ m.home_team }}</span>
+                <span class="score">{{ m.score_display() }}</span>
+                <span class="team-code">{{ m.away_team }}</span>
+            </div>
+            <div class="match-card-info">
+                <span class="stage-tag">{{ m.stage.value }}</span>
+                {% if m.group %}<span class="group-tag">{{ m.group }}组</span>{% endif %}
+                {% if m.match_date %}
+                <span class="match-date">{{ m.match_date.strftime('%m/%d') }}</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}AI 预测 — 世界杯 2026{% endblock %}
+
+{% block content %}
+<h1>🔮 AI 预测中心</h1>
+<p class="subtitle">选择一场未进行的比赛，让 AI 为你分析预测</p>
+
+{% if upcoming %}
+<div class="match-list">
+    {% for m in upcoming %}
+    <a href="/predictions/{{ m.match_id }}" class="match-list-item">
+        <div class="match-list-left">
+            <span class="stage-tag">{{ m.stage.value }}</span>
+            {% if m.group %}<span class="group-tag">{{ m.group }}组</span>{% endif %}
+        </div>
+        <div class="match-list-center">
+            <span class="team-name">{{ m.home_team }}</span>
+            <span class="vs-text">vs</span>
+            <span class="team-name">{{ m.away_team }}</span>
+        </div>
+        <div class="match-list-right">
+            {% if m.match_date %}
+            <span class="match-date">{{ m.match_date.strftime('%m/%d %H:%M') }}</span>
+            {% endif %}
+            <span class="predict-badge">🔮 预测</span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">暂无未进行的比赛</p>
+{% endif %}
+{% endblock %}

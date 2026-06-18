@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}预测: {{ match.home_team }} vs {{ match.away_team }}{% endblock %}
+
+{% block content %}
+<a href="/predictions" class="back-link">← 返回预测列表</a>
+
+<div class="predict-page">
+    <div class="match-hero">
+        <div class="match-hero-teams">
+            <div class="match-team-big">
+                <h2>{{ home.name if home else match.home_team }}</h2>
+            </div>
+            <div class="match-hero-center">
+                <div class="final-score upcoming">vs</div>
+                <div class="match-meta">
+                    <div>{{ match.stage.value }}{% if match.group %} · {{ match.group }} 组{% endif %}</div>
+                    {% if match.match_date %}<div>{{ match.match_date.strftime('%Y-%m-%d %H:%M') }}</div>{% endif %}
+                    <div>{{ match.stadium }}</div>
+                </div>
+            </div>
+            <div class="match-team-big">
+                <h2>{{ away.name if away else match.away_team }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="predict-section">
+        {% if cached %}
+        <h2>📦 已缓存的预测结果</h2>
+        <div id="prediction-result">
+            <div class="prediction-card">
+                <div class="prediction-score">{{ cached.score_display() }}</div>
+                <div class="confidence confidence-{{ cached.confidence }}">置信度: {{ cached.confidence }}</div>
+                <div class="probabilities">
+                    <div class="prob-bar">
+                        <span class="prob-label">主胜</span>
+                        <div class="prob-track"><div class="prob-fill home" style="width:{{ cached.home_win_prob * 100 }}%"></div></div>
+                        <span class="prob-value">{{ cached.prob_home_pct() }}</span>
+                    </div>
+                    <div class="prob-bar">
+                        <span class="prob-label">平局</span>
+                        <div class="prob-track"><div class="prob-fill draw" style="width:{{ cached.draw_prob * 100 }}%"></div></div>
+                        <span class="prob-value">{{ cached.prob_draw_pct() }}</span>
+                    </div>
+                    <div class="prob-bar">
+                        <span class="prob-label">客胜</span>
+                        <div class="prob-track"><div class="prob-fill away" style="width:{{ cached.away_win_prob * 100 }}%"></div></div>
+                        <span class="prob-value">{{ cached.prob_away_pct() }}</span>
+                    </div>
+                </div>
+                <div class="reasoning">
+                    <h4>💭 AI 推理</h4>
+                    <p>{{ cached.reasoning }}</p>
+                </div>
+            </div>
+        </div>
+        <button id="btn-refresh" class="btn-secondary" onclick="refreshPrediction('{{ match.match_id }}')">
+            🔄 重新预测
+        </button>
+        {% else %}
+        <h2>🔮 AI 预测</h2>
+        <div id="prediction-container">
+            <div id="prediction-placeholder">
+                <p>点击下方按钮，让 AI 分析这场比赛</p>
+                <button id="btn-predict" class="btn-primary" onclick="triggerPrediction('{{ match.match_id }}')">
+                    🤖 开始 AI 预测
+                </button>
+                <p class="prediction-hint">预计耗时 3-10 秒</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div id="prediction-loading" style="display:none;">
+            <div class="loading-spinner"></div>
+            <p>AI 正在分析两队数据...</p>
+        </div>
+        <div id="prediction-result-new" style="display:none;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function triggerPrediction(matchId) {
+    document.getElementById('prediction-placeholder').style.display = 'none';
+    document.getElementById('prediction-loading').style.display = 'block';
+
+    try {
+        const resp = await fetch(`/api/predict/${matchId}`, { method: 'POST' });
+        const data = await resp.json();
+        document.getElementById('prediction-loading').style.display = 'none';
+
+        if (data.error) {
+            document.getElementById('prediction-result-new').innerHTML =
+                `<p class="error-message">❌ ${data.error}</p>`;
+            document.getElementById('prediction-result-new').style.display = 'block';
+            return;
+        }
+        showPredictionResult(data);
+    } catch (e) {
+        document.getElementById('prediction-loading').style.display = 'none';
+        document.getElementById('prediction-result-new').innerHTML =
+            `<p class="error-message">❌ 网络错误: ${e.message}</p>`;
+        document.getElementById('prediction-result-new').style.display = 'block';
+    }
+}
+
+async function refreshPrediction(matchId) {
+    document.getElementById('prediction-result').style.display = 'none';
+    document.getElementById('prediction-loading').style.display = 'block';
+
+    try {
+        const resp = await fetch(`/api/predict/${matchId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({force_refresh: true})
+        });
+        const data = await resp.json();
+        document.getElementById('prediction-loading').style.display = 'none';
+        showPredictionResult(data);
+    } catch (e) {
+        document.getElementById('prediction-loading').style.display = 'none';
+        document.getElementById('prediction-result-new').innerHTML =
+            `<p class="error-message">❌ 网络错误: ${e.message}</p>`;
+        document.getElementById('prediction-result-new').style.display = 'block';
+    }
+}
+
+function showPredictionResult(data) {
+    const div = document.getElementById('prediction-result-new');
+    div.style.display = 'block';
+    div.innerHTML = `
+        <div class="prediction-card">
+            <div class="prediction-score">${data.predicted_score}</div>
+            <div class="confidence confidence-${data.confidence}">置信度: ${data.confidence}</div>
+            <div class="probabilities">
+                <div class="prob-bar">
+                    <span class="prob-label">主胜</span>
+                    <div class="prob-track"><div class="prob-fill home" style="width:${data.home_win_prob * 100}%"></div></div>
+                    <span class="prob-value">${Math.round(data.home_win_prob * 100)}%</span>
+                </div>
+                <div class="prob-bar">
+                    <span class="prob-label">平局</span>
+                    <div class="prob-track"><div class="prob-fill draw" style="width:${data.draw_prob * 100}%"></div></div>
+                    <span class="prob-value">${Math.round(data.draw_prob * 100)}%</span>
+                </div>
+                <div class="prob-bar">
+                    <span class="prob-label">客胜</span>
+                    <div class="prob-track"><div class="prob-fill away" style="width:${data.away_win_prob * 100}%"></div></div>
+                    <span class="prob-value">${Math.round(data.away_win_prob * 100)}%</span>
+                </div>
+            </div>
+            <div class="reasoning">
+                <h4>💭 AI 推理</h4>
+                <p>${data.reasoning}</p>
+            </div>
+            <div class="model-used">模型: ${data.model_used}</div>
+        </div>
+    `;
+}
+</script>
+{% endblock %}
